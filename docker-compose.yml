@@ -1,0 +1,36 @@
+services:
+  traefik:
+    image: traefik:v3.6
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+  proxy:
+    build: .
+    restart: unless-stopped
+    environment:
+      PROXY_USER: ${PROXY_USER}
+      PROXY_PASSWORD: ${PROXY_PASSWORD}
+    labels:
+      - traefik.enable=true
+      - "traefik.tcp.routers.proxy.rule=HostSNI(`${PROXY_HOST}`)"
+      - traefik.tcp.routers.proxy.entrypoints=websecure
+      - traefik.tcp.routers.proxy.tls=true
+      - traefik.tcp.routers.proxy.tls.certresolver=letsencrypt
+      - traefik.tcp.services.proxy.loadbalancer.server.port=8888
+
+volumes:
+  letsencrypt:
