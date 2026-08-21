@@ -14,7 +14,7 @@ cat > /tmp/tinyproxy.conf <<EOF
 Port 8888
 Listen 0.0.0.0
 Timeout 600
-BasicAuth "${PROXY_USER}" "${PROXY_PASSWORD}"
+BasicAuth ${PROXY_USER} ${PROXY_PASSWORD}
 EOF
 
 exec tinyproxy -d -c /tmp/tinyproxy.conf
