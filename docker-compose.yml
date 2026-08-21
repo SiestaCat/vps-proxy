@@ -5,6 +5,7 @@ services:
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.file.filename=/etc/traefik/dynamic.yml
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}
@@ -17,6 +18,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
+    configs:
+      - source: traefik_dynamic
+        target: /etc/traefik/dynamic.yml
 
   proxy:
     build: .
@@ -30,7 +34,17 @@ services:
       - traefik.tcp.routers.proxy.entrypoints=websecure
       - traefik.tcp.routers.proxy.tls=true
       - traefik.tcp.routers.proxy.tls.certresolver=letsencrypt
+      - traefik.tcp.routers.proxy.tls.options=proxy@file
       - traefik.tcp.services.proxy.loadbalancer.server.port=8888
+
+configs:
+  traefik_dynamic:
+    content: |
+      tls:
+        options:
+          proxy:
+            alpnProtocols:
+              - http/1.1
 
 volumes:
   letsencrypt:
